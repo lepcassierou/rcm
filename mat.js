@@ -1,5 +1,7 @@
 var rcm_width = 500;
 var rcm_height = 500;
+var legend_w = 15;
+var legend_h = rcm_height;
 
 // Empty matrices
 // var A = [];
