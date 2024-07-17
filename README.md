@@ -18,7 +18,8 @@ The design is inspired from standard confusion matrices:
 - A $+$ symbol means model B performs better than model A in that cell. 
 - A $-$ symbol means model A performs better than model B in that cell. 
 - The absence of symbols indicates A and B classify the same number of samples in that cell. 
-- A gradient of colors encodes the amount of difference between A and B in that cell. 
+- A gradient of colors encodes the amount of difference between A and B in that cell.
+- Hovering the cells will indicate the exact difference in the number of samples between the two models, alongside the percentage of samples it represents compared to the number of samples of that class (w.r.t. to the ground truths).  
 
 The tool is composed of several sliders to control the rendering of the visualization. In particular, the sliders respectively control: 
 1. The size of the RCM.
@@ -28,7 +29,7 @@ The tool is composed of several sliders to control the rendering of the visualiz
 
 The last slider enables the user to hide some symbols to highlight the cells with the greatest differences between the two models. 
 
-The repository is composed of: 
+## The repository is composed of: 
 - The rendering HTML file to visualize the RCM: [index.html](index.html)
 - The JS implementation of RCM: [rcm.js](rcm.js)
 - A JS file in which two variables (A and B) store the two standard confusion matrices as JS lists: [matrices_data.js](matrices_data.js)
