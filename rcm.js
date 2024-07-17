@@ -1,10 +1,29 @@
+var matrices_exist = false;
+var params_A = undefined;
+var params_B = undefined;
+var rcm = undefined;
+var m_rcm = undefined;
+var M_rcm = undefined;
+
+
 function main() {
+    let valid = compute_confusion_parameters();
+    if (!valid || nb_problems > 0){
+        return;
+    }
     draw_confusion_matrix();
+    draw_legend();
+    add_sliders();
 }
 
 
 function get_rcm_id() {
     return "#rcm";
+}
+
+
+function get_sliders_id() {
+    return "#sliders";
 }
 
 
@@ -17,11 +36,15 @@ function compute_cell_color(val, m, M, m_opacity, M_opacity) {
 }
 
 
-function get_label_of_class(nb_classes) {
-    if (nb_classes < 0) {
+function get_label_of_class(num_class, max_idx = 4) {
+    if (num_class < 0) {
         return 0;
     }
-    return nb_classes;
+    let classes_defined = typeof classes_name !== 'undefined';
+    if (classes_defined) {
+        return classes_name[num_class].substring(0, max_idx);
+    }
+    return num_class;
 }
 
 
@@ -49,7 +72,7 @@ function compute_rcm(matrix_A, matrix_B, nb_classes) {
     for (let i = 0; i < nb_classes; ++i) {
         let rcm_row = [];
         for (let j = 0; j < nb_classes; ++j) {
-            rcm_row.push(matrix_A[i][j] - matrix_B[i][j]);
+            rcm_row.push(matrix_B[i][j] - matrix_A[i][j]);
         }
         rcm.push(rcm_row);
     }
@@ -74,7 +97,6 @@ function min_max_rcm(rcm, nb_classes, nb_samples) {
 
 function set_svg_size() {
     let rcm_tag = d3.select(get_rcm_id());
-    console.log(rcm_tag);
     rcm_tag.attr("width", rcm_width);
     rcm_tag.attr("height", rcm_height);
 }
@@ -104,16 +126,18 @@ function draw_first_row(rcm_svg, params) {
                 .attr("x", 0)
                 .attr("y", 0)
                 .attr("dy", ".35em")
-                .attr("font-size", "9")
+                .attr("font-size", rcm_head_font_size)
                 .attr("transform", `translate(${cell_w / 3}, ${2 * cell_h / 3}) rotate(45)`)
+                .style("font-family", global_font_family)
                 .style("text-anchor", "middle")
                 .text("GT".substring(0, 3));
             rcm_svg.append("text")
                 .attr("x", 0)
                 .attr("y", 0)
                 .attr("dy", ".35em")
-                .attr("font-size", "8")
+                .attr("font-size", rcm_head_font_size)
                 .attr("transform", `translate(${2 * cell_w / 3}, ${cell_h / 3}) rotate(45)`)
+                .style("font-family", global_font_family)
                 .style("text-anchor", "middle")
                 .text("predictions".substring(0, 4));
         } else {
@@ -121,10 +145,11 @@ function draw_first_row(rcm_svg, params) {
                 .attr("x", 0)
                 .attr("y", 0)
                 .attr("dy", ".35em")
-                .attr("font-size", "10")
+                .attr("font-size", rcm_head_font_size)
                 .attr("transform", `translate(${margin_x + cell_w * (i + .5)}, ${cell_h / 2})`)
+                .style("font-family", global_font_family)
                 .style("text-anchor", "middle")
-                .text(get_label_of_class(i - 1, 5));
+                .text(get_label_of_class(i - 1, nb_max_char_per_class));
         }
     }
 }
@@ -152,10 +177,12 @@ function draw_first_column(rcm_svg, params) {
             .attr("x", 0)
             .attr("y", 0)
             .attr("dy", ".35em")
-            .attr("font-size", "10")
+            .attr("font-family", "")
+            .attr("font-size", rcm_head_font_size)
+            .style("font-family", global_font_family)
             .attr("transform", `translate(${margin_x + cell_w / 2}, ${margin_y + cell_h * (j + 1.5)})`)
             .style("text-anchor", "middle")
-            .text(get_label_of_class(j, 7));
+            .text(get_label_of_class(j, nb_max_char_per_class));
 
     }
 }
@@ -173,7 +200,6 @@ function draw_rcm_body(rcm_svg, rcm, params) {
     let min_percentage = params.min_percentage;
     let max_percentage = params.max_percentage;
     let color_hovered = params.color_hovered;
-    let M = params.M;
     for (let i = 0; i < nb_classes; ++i) {
         for (let j = 0; j < nb_classes; ++j) {
             let cell = rcm_svg.append("rect")
@@ -198,22 +224,26 @@ function draw_rcm_body(rcm_svg, rcm, params) {
                         return margin_x + cell_w * (i + 1.5);
                     })
                     .attr("y", () => {
-                        return margin_x + cell_h * (j + 1.5); // TODO: margin_y ?
+                        return margin_y + cell_h * (j + 1.5);
                     })
                     .attr("dy", ".35em")
+                    .attr("font-size", rcm_body_font_size)
+                    .style("font-family", global_font_family)
                     .style("text-anchor", "middle")
                     .text(function () {
-                        if (i == j) {
-                            if (rcm[j][i] > 0) {
-                                return "+";
-                            } else {
-                                return "-";
-                            }
-                        } else {
-                            if (rcm[j][i] < 0) {
-                                return "+";
-                            } else {
-                                return "-";
+                        if (Math.abs(rcm[j][i]) >= displayed_percentage_symbols_th){
+                            if (i == j) { // Diagonal cells
+                                if (rcm[j][i] > 0) {
+                                    return "+";
+                                } else {
+                                    return "-";
+                                }
+                            } else { // Off-diagonal cells
+                                if (rcm[j][i] < 0) {
+                                    return "+";
+                                } else {
+                                    return "-";
+                                }
                             }
                         }
                     })
@@ -221,7 +251,7 @@ function draw_rcm_body(rcm_svg, rcm, params) {
             }
 
             let cell_color = 0;
-            cell_color = compute_cell_color(rcm[j][i], 0, M, 0.1, 1);
+            cell_color = compute_cell_color(rcm[j][i], 0, M_rcm, 0.1, 1);
             cell.style("fill", cell_color[0])
                 .style("fill-opacity", cell_color[1]);
 
@@ -256,10 +286,10 @@ function draw_rcm_body(rcm_svg, rcm, params) {
 }
 
 
-function draw_confusion_matrix() {
-    let matrices_exist = check_matrices_existence();
+function compute_confusion_parameters(){
+    matrices_exist = check_matrices_existence();
     if (!matrices_exist) {
-        return;
+        return false;
     }
     params_A = get_matrix_params(A);
     params_B = get_matrix_params(B);
@@ -267,9 +297,14 @@ function draw_confusion_matrix() {
 
     rcm = compute_rcm(A, B, params_A.nb_classes);
     let m_M = min_max_rcm(rcm, params_A.nb_classes, params_A.nb_samples);
-    let m = m_M[0];
-    let M = m_M[1];
+    m_rcm = m_M[0];
+    M_rcm = m_M[1];
+    displayed_percentage_symbols_th = m_rcm;
+    return true;
+}
 
+
+function draw_confusion_matrix() {
     let max_percentage = 0;
     let min_percentage = 1000;
 
@@ -306,11 +341,97 @@ function draw_confusion_matrix() {
     display_params.stroke_w = stroke_w;
     display_params.max_percentage = max_percentage;
     display_params.min_percentage = min_percentage;
-    display_params.M = M;
     display_params.lines_sum = params_A.lines_sum;
     draw_first_row(rcm_svg, display_params);
     draw_first_column(rcm_svg, display_params);
     draw_rcm_body(rcm_svg, rcm, display_params);
 
     draw_legend(min_percentage, max_percentage);
+}
+
+
+function draw_legend() {
+
+}
+
+
+function add_sliders() {
+    let m = 100;
+    let M = 1000;
+    let sliders_height = "35px";
+    let sliders_table = d3.select(get_sliders_id()).append("table");
+    let sliders_tbody = sliders_table.append("tbody");
+    sliders_tbody.attr("font-size", rcm_head_font_size)
+        .style("height", sliders_height)
+        .style("padding", "10px")
+        .style("display", "inline-block")
+        .style("font-family", global_font_family)
+        .style("vertical-align", "middle")
+        .style("text-anchor", "middle");
+
+    // RCM size
+    let rcm_tr = sliders_tbody.append("tr");
+    rcm_tr.append("td")
+        .text("RCM size: ");
+    let slider_rcm_size = rcm_tr.append("td").append("input")
+        .attr("type", "range")
+        .attr("min", m)
+        .attr("max", M)
+        .attr("value", rcm_width)
+        .attr("class", "slider")
+        .style("height", sliders_height)
+    slider_rcm_size.on("input", function (event) {
+        rcm_width = event.target.value;
+        rcm_height = event.target.value;
+        draw_confusion_matrix();
+    })
+
+    // RCM header font size
+    let m_hfs = 8;
+    let M_hfs = 30;
+    rcm_tr.append("td")
+        .text("RCM head font size: ");
+    let slider_rcm_head_font = rcm_tr.append("td").append("input")
+        .attr("type", "range")
+        .attr("min", m_hfs)
+        .attr("max", M_hfs)
+        .attr("value", parseInt(rcm_head_font_size.split("px")[0]))
+        .attr("class", "slider")
+        .style("height", sliders_height)
+    slider_rcm_head_font.on("input", function (event) {
+        rcm_head_font_size = event.target.value + "px";
+        draw_confusion_matrix();
+    })
+
+    // RCM body font size
+    let m_bfs = 8;
+    let M_bfs = 60;
+    rcm_tr.append("td")
+        .text("RCM body font size: ");
+    let slider_rcm_body_font = rcm_tr.append("td").append("input")
+        .attr("type", "range")
+        .attr("min", m_bfs)
+        .attr("max", M_bfs)
+        .attr("value", parseInt(rcm_body_font_size.split("px")[0]))
+        .attr("class", "slider")
+        .style("height", sliders_height)
+    slider_rcm_body_font.on("input", function (event) {
+        rcm_body_font_size = event.target.value + "px";
+        draw_confusion_matrix();
+    })
+
+    // RCM symbols percentage
+    rcm_tr.append("td")
+        .text("RCM displayed symbols threshold: ");
+    let slider_rcm_symb = rcm_tr.append("td").append("input")
+        .attr("type", "range")
+        .attr("min", m_rcm)
+        .attr("max", M_rcm)
+        .attr("value", displayed_percentage_symbols_th)
+        .attr("class", "slider")
+        .style("height", sliders_height)
+    slider_rcm_symb.on("input", function (event) {
+        displayed_percentage_symbols_th = event.target.value;
+        draw_confusion_matrix();
+    })
 }

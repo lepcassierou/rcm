@@ -17,7 +17,7 @@ function initialize_problems_list() {
     let problems_tag = d3.select(id);
     problems_tag.style("border", "solid black 2px");
     problems_tag.style("padding", "10px");
-    problems_tag.style("font-family", "Verdana, sans-serif");
+    problems_tag.style("font-family", global_font_family);
     problems_tag.append("p").text("Problems: ");
     problems_tag.append("ul");
 }
