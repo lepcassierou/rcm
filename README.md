@@ -54,9 +54,25 @@ To use this code:
 If you use this code, please cite either one of these two works: 
 
 ```
-POMMÉ, Luc-Etienne, BOURQUI, Romain, GIOT, Romain, et al. Relative confusion matrix: efficient comparison of decision models. In : 2022 26th International Conference Information Visualisation (IV). IEEE, 2022. p. 98-103.
+@inproceedings{pomme2022relative,
+  title={Relative confusion matrix: efficient comparison of decision models},
+  author={Pomm{\'e}, Luc-Etienne and Bourqui, Romain and Giot, Romain and Auber, David},
+  booktitle={2022 26th International Conference Information Visualisation (IV)},
+  pages={98--103},
+  year={2022},
+  organization={IEEE}
+}
+
 ```
 
 ```
-POMMÉ, Luc Etienne, BOURQUI, Romain, GIOT, Romain, et al. Relative Confusion Matrix: An Efficient Visualization for the Comparison of Classification Models. In : Artificial Intelligence and Visualization: Advancing Visual Knowledge Discovery. Cham : Springer Nature Switzerland, 2024. p. 223-243.
+@incollection{pomme2024relative,
+  title={Relative Confusion Matrix: An Efficient Visualization for the Comparison of Classification Models},
+  author={Pomm{\'e}, Luc Etienne and Bourqui, Romain and Giot, Romain and Auber, David},
+  booktitle={Artificial Intelligence and Visualization: Advancing Visual Knowledge Discovery},
+  pages={223--243},
+  year={2024},
+  publisher={Springer}
+}
+
 ```
