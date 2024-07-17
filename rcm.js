@@ -4,21 +4,27 @@ var params_B = undefined;
 var rcm = undefined;
 var m_rcm = undefined;
 var M_rcm = undefined;
+var min_percentage = 1000;
+var max_percentage = 0;
 
 
 function main() {
     let valid = compute_confusion_parameters();
-    if (!valid || nb_problems > 0){
+    if (!valid || nb_problems > 0) {
         return;
     }
     draw_confusion_matrix();
-    draw_legend();
     add_sliders();
 }
 
 
 function get_rcm_id() {
     return "#rcm";
+}
+
+
+function get_legend_id() {
+    return "#legend";
 }
 
 
@@ -99,6 +105,10 @@ function set_svg_size() {
     let rcm_tag = d3.select(get_rcm_id());
     rcm_tag.attr("width", rcm_width);
     rcm_tag.attr("height", rcm_height);
+    let legend_tag = d3.select(get_legend_id());
+    legend_tag.attr("width", legend_w);
+    legend_tag.attr("height", rcm_height);
+    d3.select("#legend_container").style("margin-left", "50px");
 }
 
 
@@ -197,8 +207,6 @@ function draw_rcm_body(rcm_svg, rcm, params) {
     let color_stroke = params.color_stroke;
     let stroke_w = params.stroke_w;
     let lines_sum = params.lines_sum;
-    let min_percentage = params.min_percentage;
-    let max_percentage = params.max_percentage;
     let color_hovered = params.color_hovered;
     for (let i = 0; i < nb_classes; ++i) {
         for (let j = 0; j < nb_classes; ++j) {
@@ -231,7 +239,7 @@ function draw_rcm_body(rcm_svg, rcm, params) {
                     .style("font-family", global_font_family)
                     .style("text-anchor", "middle")
                     .text(function () {
-                        if (Math.abs(rcm[j][i]) >= displayed_percentage_symbols_th){
+                        if (Math.abs(rcm[j][i]) >= displayed_percentage_symbols_th) {
                             if (i == j) { // Diagonal cells
                                 if (rcm[j][i] > 0) {
                                     return "+";
@@ -286,7 +294,7 @@ function draw_rcm_body(rcm_svg, rcm, params) {
 }
 
 
-function compute_confusion_parameters(){
+function compute_confusion_parameters() {
     matrices_exist = check_matrices_existence();
     if (!matrices_exist) {
         return false;
@@ -305,9 +313,6 @@ function compute_confusion_parameters(){
 
 
 function draw_confusion_matrix() {
-    let max_percentage = 0;
-    let min_percentage = 1000;
-
     let margin_x = 1;
     let margin_y = 1;
     set_svg_size();
@@ -339,19 +344,116 @@ function draw_confusion_matrix() {
     display_params.color_stroke = color_stroke;
     display_params.color_hovered = color_hovered;
     display_params.stroke_w = stroke_w;
-    display_params.max_percentage = max_percentage;
-    display_params.min_percentage = min_percentage;
     display_params.lines_sum = params_A.lines_sum;
     draw_first_row(rcm_svg, display_params);
     draw_first_column(rcm_svg, display_params);
     draw_rcm_body(rcm_svg, rcm, display_params);
-
-    draw_legend(min_percentage, max_percentage);
+    draw_legend();
 }
 
 
 function draw_legend() {
+    let legend_tag = d3.select(get_legend_id());
+    d3.selectAll(get_legend_id()).selectAll("*").remove();
+    let legend_defs = legend_tag.append('defs');
 
+    let legend_pad_h = 10;
+
+    var main_gradient = legend_defs.append('linearGradient')
+        .attr('id', 'main_gradient')
+        .attr('gradientTransform', 'rotate(90)');
+
+    main_gradient.append('stop')
+        .attr("stop-color", "#0080FF")
+        .attr('offset', '0%');
+
+    main_gradient.append('stop')
+        .attr("stop-color", "#FFFFFF")
+        .attr('offset', '100%');
+
+    legend_tag.append("rect")
+        .attr("x", 0)
+        .attr("y", legend_pad_h)
+        .attr("width", legend_bar_w)
+        .attr("height", rcm_height - 2 * legend_pad_h)
+        .style("fill", "url(#main_gradient)");
+
+    let lgd_stroke_w = 2;
+    let tick_offset = 7;
+    legend_tag.append("polyline")
+        .attr("points", () => {
+            return (legend_bar_w + tick_offset) + ", " + (legend_pad_h + lgd_stroke_w / 2) + " "
+                + "0, " + (legend_pad_h + lgd_stroke_w / 2) + " "
+                + "0, " + (rcm_height - legend_pad_h - lgd_stroke_w / 2) + " "
+                + (legend_bar_w + tick_offset) + ", " + (rcm_height - legend_pad_h - lgd_stroke_w / 2) + " "
+        })
+        .style("fill", "none")
+        .style("stroke", "black")
+
+    legend_tag.append("text")
+        .attr("x", (legend_bar_w + tick_offset))
+        .attr("y", 5 + lgd_stroke_w + legend_pad_h)
+        .attr("font-size", rcm_head_font_size)
+        .attr("font-family", global_font_family)
+        .text(() => {
+            return max_percentage.toFixed(2) + " %";
+        });
+
+    legend_tag.append("text")
+        .attr("x", (legend_bar_w + tick_offset))
+        .attr("y", rcm_height - 5 - lgd_stroke_w)
+        .attr("font-size", rcm_head_font_size)
+        .attr("font-family", global_font_family)
+        .text(() => {
+            return min_percentage.toFixed(2) + " %";
+        });
+
+    let rect_w = 25;
+    let rect_h = 20;
+    let nb_lgd_size = 3;
+    let pad_y_lgd = 5;
+    let shift_y = 20;
+    legend_tag.append("rect")
+        .attr("x", nb_lgd_size * legend_bar_w + rect_w / 2)
+        .attr("y", rcm_height / 2 - shift_y - 3 * rect_h / 4 - 1 + pad_y_lgd)
+        .attr("width", rect_w)
+        .attr("height", rect_h)
+        .style("fill", "none")
+        .style("stroke", "black");
+    legend_tag.append("text")
+        .attr("x", nb_lgd_size * legend_bar_w + rect_w)
+        .attr("y", rcm_height / 2 - shift_y + pad_y_lgd)
+        .attr("font-size", rcm_head_font_size)
+        .attr("font-family", global_font_family)
+        .style("text-anchor", "middle")
+        .text("+");
+    legend_tag.append("text")
+        .attr("x", nb_lgd_size * legend_bar_w + rect_w + 20)
+        .attr("y", rcm_height / 2 - shift_y + pad_y_lgd)
+        .attr("font-size", rcm_head_font_size)
+        .attr("font-family", global_font_family)
+        .text("B better than A");
+
+    legend_tag.append("rect")
+        .attr("x", nb_lgd_size * legend_bar_w + rect_w / 2)
+        .attr("y", rcm_height / 2 + shift_y - 3 * rect_h / 4 - 1 + 2 * pad_y_lgd)
+        .attr("width", rect_w)
+        .attr("height", rect_h)
+        .style("fill", "none")
+        .style("stroke", "black");
+    legend_tag.append("text")
+        .attr("x", nb_lgd_size * legend_bar_w + rect_w)
+        .attr("y", rcm_height / 2 + shift_y + 2 * pad_y_lgd)
+        .attr("font-size", rcm_head_font_size)
+        .attr("font-family", global_font_family)
+        .style("text-anchor", "middle")
+        .text("-");
+    legend_tag.append("text")
+        .attr("x", nb_lgd_size * legend_bar_w + rect_w + 20)
+        .attr("y", rcm_height / 2 + shift_y + 2 * pad_y_lgd)
+        .attr("font-size", rcm_head_font_size)
+        .attr("font-family", global_font_family)
+        .text("A better than B");
 }
 
 
